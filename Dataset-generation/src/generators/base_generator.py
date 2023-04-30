@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 
 class BaseDatasetGenerator(ABC):
-    def __init__(self, configuration):
-        self.configuration = configuration
+    def __init__(self):
         super().__init__()
         
     @abstractmethod
