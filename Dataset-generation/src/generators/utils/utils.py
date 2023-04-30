@@ -48,6 +48,8 @@ class Saver():
         self.base_dir = base_dir
         self.files_per_dir = files_per_dir
 
+        os.makedirs(base_dir, exist_ok=True)
+
         if self.write_info_file:
             self.info_file = open(os.path.join(base_dir, info_filename), 'w')
             self.info_file.write('index\timage\tlabel\n')
