@@ -1,7 +1,9 @@
 from .base_model import BaseModel
 import torch
 import torch.nn as nn
+import torch.optim as optim
 import torchvision.transforms.functional as TF
+import pytorch_lightning as pl
 
 
 class DoubleConv(nn.Module):
@@ -22,10 +24,11 @@ class DoubleConv(nn.Module):
         return self.conv(x)
 
 
-class Unet(BaseModel):
-    def __init__(self, in_channels, out_channels, features=[8, 16, 32]) -> None:
-        super(BaseModel, self).__init__()
+class Unet(pl.LightningModule):
+    def __init__(self, in_channels=1, out_channels=1, features=[8, 16, 32], loss=None) -> None:
+        super(Unet, self).__init__()
 
+        # NET PARAMS
         self.downs = nn.ModuleList()
         self.ups = nn.ModuleList()
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
@@ -45,6 +48,9 @@ class Unet(BaseModel):
         
         # final layer
         self.final_conv = nn.Conv2d(features[0], out_channels, kernel_size=1)
+
+        # LOSS
+        self.loss_fn = nn.BCELoss(reduction='mean') if loss is None else loss
     
     def forward(self, x):
         skip_connections = []
@@ -70,14 +76,41 @@ class Unet(BaseModel):
 
         return self.final_conv(x)
 
+    def predict_step(self, batch, batch_idx):
+        data, targets = batch
+        pred = self(data)
+        return pred
 
-# def test():
-#     x = torch.randn((3, 3, 160, 160))
-#     model = Unet(in_channels=3, out_channels=3)
-#     preds = model(x)
-#     print(preds.shape)
-#     print(x.shape)
-#     assert preds.shape == x.shape
+    def sharing_step(self, batch, batch_idx):
+        data, targets = batch
+        predictions = self(data).sigmoid()
 
+        targets = targets[:, 2:3]
+        # print(predictions.shape, targets.shape)
+        # print(predictions, targets.max)
 
-# test()
+        loss = self.loss_fn(predictions, targets)
+        return predictions, loss
+
+    def training_step(self, batch, batch_idx):
+        _, loss = self.sharing_step(batch, batch_idx)
+
+        # log
+        self.log('loss/train', loss, on_step=True, on_epoch=False, prog_bar=True, logger=True)
+        return loss
+    
+    def validation_step(self, batch, batch_idx):
+        predictions, val_loss = self.sharing_step(batch, batch_idx)
+
+        # log
+        self.log('loss/val', val_loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        return predictions
+    
+    def configure_optimizers(self, lr=1e-4):
+        optimizer = optim.Adam(self.parameters(), lr=lr)
+        # optimizer = optim.RAdam(self.parameters(), lr = 0.005)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.2, patience=1, cooldown=0)
+        return [optimizer], [{"scheduler": scheduler, "interval": "epoch", "monitor": "loss/val"}]
+
+    def lr_scheduler_step(self, scheduler, metric):
+        scheduler.step(epoch=self.current_epoch)

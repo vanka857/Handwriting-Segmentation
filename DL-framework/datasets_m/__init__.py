@@ -1,1 +1,1 @@
-from .hwr_dataset import HwrOnPrintedDataset
+from .hwr_dataset import HwrOnPrintedDataset, HwrOnPrintedDataModule
