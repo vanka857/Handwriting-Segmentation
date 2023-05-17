@@ -8,6 +8,20 @@ from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader
 
 
+class FakeDataset(Dataset):
+    def __init__(self, len, image_height, image_width, constant_value):
+        self.len = len
+        self.image_height = image_height
+        self.image_width = image_width
+        self.constant_value = constant_value
+    
+    def __len__(self):
+        return self.len
+    
+    def __getitem__(self, index):
+        return np.full((self.image_height, self.image_width, len(self.constant_value)), self.constant_value, np.uint8)
+
+
 class ImageDataset(Dataset):
     def __init__(self, path, read_in_memory=False, transform=None, images_map_file=None, multiplication_factor=1) -> None:
         super().__init__()
