@@ -7,6 +7,7 @@ import pytorch_lightning as pl
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from torch.utils.data import DataLoader
+import itertools
 
 
 def load_image(file_path):
@@ -14,18 +15,21 @@ def load_image(file_path):
 
 
 class HwrOnPrintedDataset(BaseDataset):
-    def __init__(self, path, info_filename, info_image_column='image', info_mask_column='label', transform=None):
+    def __init__(self, path, info_filename, info_image_column='image', info_mask_column='label', transform=None, size=None):
         self.path = path
         self.info_filename = info_filename
         self.info_image_column = info_image_column
         self.info_mask_column = info_mask_column
         self.transform = transform
+        self.size = size
         
         self.meta = pd.read_csv(info_filename, sep='\t')
 
     def __len__(self):
-        return 500
-        return len(self.meta)
+        if self.size is None:
+            return len(self.meta)
+        else:
+            return self.size
 
     def __getitem__(self, index):
         item = self.meta.iloc[index]
@@ -46,14 +50,15 @@ class HwrOnPrintedDataset(BaseDataset):
 
 
 class HwrOnPrintedDataModule(pl.LightningDataModule):
-    def __init__(self, path, batch_size=32, num_workers=0, pin_memory=False):
+    def __init__(self, path, batch_size=32, num_workers=0, pin_memory=False, image_height=640, image_width=420, ds_part=None):
         super().__init__()
         self.path = path
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.pin_memory = pin_memory
-        self.image_height = 640
-        self.image_width = 420
+        self.image_height = image_height
+        self.image_width = image_width
+        self.ds_part = ds_part
 
         self.train_transform = A.Compose(
             [
@@ -86,46 +91,51 @@ class HwrOnPrintedDataModule(pl.LightningDataModule):
         self.ds_train = HwrOnPrintedDataset(
             path=self.path['train'],
             info_filename=os.path.join(self.path['train'], '_info.csv'), 
-            transform=self.train_transform
+            transform=self.train_transform,
         )
         self.ds_val = HwrOnPrintedDataset(
             path=self.path['val'],
             info_filename=os.path.join(self.path['val'], '_info.csv'), 
-            transform=self.val_transform
+            transform=self.val_transform,
         )
         self.ds_test = HwrOnPrintedDataset(
             path=self.path['test'],
             info_filename=os.path.join(self.path['test'], '_info.csv'), 
-            transform=self.val_transform
+            transform=self.val_transform,
         )
 
+    def _return_sliced(self, dl):
+        if self.ds_part is None:
+            return dl
+        else:
+            return itertools.islice(dl, int(len(dl) * self.ds_part))
+
     def train_dataloader(self):
-        return DataLoader(
+        dl = DataLoader(
             self.ds_train, 
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             pin_memory=self.pin_memory,
             shuffle=True)
+        
+        return self._return_sliced(dl)
 
     def val_dataloader(self):
-        return DataLoader(
+        dl = DataLoader(
             self.ds_val, 
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             pin_memory=self.pin_memory,
             shuffle=False)
+        
+        return self._return_sliced(dl)
 
     def test_dataloader(self):
-        return DataLoader(
+        dl = DataLoader(
             self.ds_test, 
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             pin_memory=self.pin_memory,
             shuffle=False)
-
-    # def predict_dataloader(self):
-    #     return DataLoader(self.ds_test, batch_size=self.batch_size)
-
-    def teardown(self, stage: str):
-        # Used to clean-up when the run is finished
-        pass
+        
+        return self._return_sliced(dl)

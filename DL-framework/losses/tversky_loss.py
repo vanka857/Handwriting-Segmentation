@@ -3,6 +3,8 @@ import torch.nn as nn
 
 
 class TverskyLoss(nn.Module):
+    __name__ = 'tversky_loss'
+
     def __init__(self, weight=None, size_average=True, alpha=0.5, beta=0.5):
         super(TverskyLoss, self).__init__()
         self.alpha = alpha
@@ -28,6 +30,8 @@ class TverskyLoss(nn.Module):
 
 
 class FocalTverskyLoss(nn.Module):
+    __name__ = 'focal_tversky_loss'
+
     def __init__(self, weight=None, size_average=True, alpha=0.5, beta=0.5, gamma=2):
         super(FocalTverskyLoss, self).__init__()
         self.alpha = alpha

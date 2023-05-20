@@ -29,7 +29,6 @@ def f_score(pr, gt, beta=1, eps=1e-7, threshold=None, activation='sigmoid'):
     if threshold is not None:
         pr = (pr > threshold).float()
 
-
     tp = torch.sum(gt * pr)
     fp = torch.sum(pr) - tp
     fn = torch.sum(gt) - tp
@@ -69,4 +68,4 @@ class BCEDiceLoss(DiceLoss):
     def forward(self, y_pr, y_gt):
         dice = super().forward(y_pr, y_gt)
         bce = self.bce(y_pr, y_gt)
-        return (self.lambda_dice*dice) + (self.lambda_bce* bce)
+        return (self.lambda_dice * dice) + (self.lambda_bce * bce)
