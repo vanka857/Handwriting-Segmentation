@@ -1,4 +1,3 @@
-from .base_model import BaseModel
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -26,8 +25,9 @@ class DoubleConv(nn.Module):
 
 
 class Unet(pl.LightningModule):
-    def __init__(self, in_channels=1, out_channels=1, features=[8, 16, 32], loss=None) -> None:
+    def __init__(self, in_channels=1, out_channels=1, features=[8, 16, 32], lr=1e-2, loss=None) -> None:
         super(Unet, self).__init__()
+        self.lr=lr
 
         # NET PARAMS
         self.downs = nn.ModuleList()
@@ -46,7 +46,7 @@ class Unet(pl.LightningModule):
         for feature in reversed(features):
             self.ups.append(nn.ConvTranspose2d(feature * 2, feature, kernel_size=2, stride=2))
             self.ups.append(DoubleConv(feature * 2, feature))
-
+        
         # final layer
         self.final_conv = nn.Conv2d(features[0], out_channels, kernel_size=1)
 
@@ -59,12 +59,11 @@ class Unet(pl.LightningModule):
         self.rec_fn = BinaryRecall()
 
         # saving hyperparameters
-        self.save_hyperparameters(ignore=['loss'], logger=False)
+        # self.save_hyperparameters(ignore=['loss'], logger=True)
     
     def forward(self, x):
         skip_connections = []
 
-        # down
         for down in self.downs:
             x = down(x)
             skip_connections.append(x)
@@ -73,7 +72,6 @@ class Unet(pl.LightningModule):
         x = self.bottleneck(x)
         skip_connections = skip_connections[::-1]
 
-        # up with skip connections
         for idx in range(0, len(self.ups), 2):
             # UP by ConvTranspose and Double conv on each iteration
             x = self.ups[idx](x)
@@ -86,10 +84,6 @@ class Unet(pl.LightningModule):
             x = self.ups[idx + 1](concat_skip)
 
         return self.final_conv(x)
-
-    def predict_step(self, batch, batch_idx):
-        data, targets = batch
-        return self(data).sigmoid()
 
     def _sharing_step(self, batch, batch_idx):
         data, targets = batch
@@ -138,7 +132,7 @@ class Unet(pl.LightningModule):
         return predictions
     
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=1e-2)
+        optimizer = optim.Adam(self.parameters(), lr=self.lr)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=1, cooldown=1, min_lr=1e-4)
         # return [optimizer], [{"scheduler": scheduler, "interval": "epoch", "monitor": "_loss/val"}]
         return (

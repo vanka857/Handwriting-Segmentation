@@ -50,7 +50,7 @@ class HwrOnPrintedDataset(BaseDataset):
 
 
 class HwrOnPrintedDataModule(pl.LightningDataModule):
-    def __init__(self, path, batch_size=32, num_workers=0, pin_memory=False, image_height=640, image_width=420, ds_part=None):
+    def __init__(self, path, batch_size=1, num_workers=0, pin_memory=False, image_height=640, image_width=420, ds_part=None):
         super().__init__()
         self.path = path
         self.batch_size = batch_size
@@ -92,17 +92,17 @@ class HwrOnPrintedDataModule(pl.LightningDataModule):
             path=self.path['train'],
             info_filename=os.path.join(self.path['train'], '_info.csv'), 
             transform=self.train_transform,
-        )
+        ) if 'train' in self.path else None
         self.ds_val = HwrOnPrintedDataset(
             path=self.path['val'],
             info_filename=os.path.join(self.path['val'], '_info.csv'), 
             transform=self.val_transform,
-        )
+        ) if 'val' in self.path else None
         self.ds_test = HwrOnPrintedDataset(
             path=self.path['test'],
             info_filename=os.path.join(self.path['test'], '_info.csv'), 
             transform=self.val_transform,
-        )
+        ) if 'test' in self.path else None
 
     def _return_sliced(self, dl):
         if self.ds_part is None:

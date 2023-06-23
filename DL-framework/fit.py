@@ -75,14 +75,15 @@ def fit(hparams: HP = None):
 
     lr_logger = pl.callbacks.LearningRateMonitor(logging_interval='epoch')
 
-    early_stopping = pl.callbacks.EarlyStopping('_loss/val', mode='min', min_delta=0.02, patience=3)
+    early_stopping = pl.callbacks.EarlyStopping('_loss/val', mode='min', min_delta=0.003, patience=3)
 
     # TRAINER
     trainer = pl.Trainer(
-        gpus=[3],
+        gpus=[1],
         max_epochs=hparams.epoches, 
         log_every_n_steps=2, 
-        callbacks=[checkpoint_callback, load_images_to_tb, lr_logger, early_stopping], 
+        callbacks=[checkpoint_callback, load_images_to_tb, lr_logger], 
+        # callbacks=[checkpoint_callback, load_images_to_tb, lr_logger, early_stopping], 
         # callbacks=[checkpoint_callback, save_images_callback, load_images_to_tb, lr_logger, early_stopping], 
         logger=tb_logger)
     
@@ -104,7 +105,6 @@ if __name__ == '__main__':
     # ds_path = '/Users/vankudr/Documents/НИР-data/dataset_1'
     model_data_path = '/home/kudrjavtseviv/DL-framework/.data'
 
-    checkpoints_path = os.path.join(model_data_path, 'checkpoints')
     logs_path = os.path.join(model_data_path, 'logs')
 
     import torch
@@ -122,35 +122,46 @@ if __name__ == '__main__':
     from models import Unet, ResNet
     import torch.nn as nn
 
-    DS_PART = 0.01
+    DS_PART = None
     IMAGE_HEIGHT = 800
     IMAGE_WIDTH = 600
     BATCH_SIZE = 2
-    EPOCHES = 5
+    EPOCHES = 25
 
     configs = [
-        HP(
-            model_type='Unet',
-            loss=DiceLoss,
-            loss_params={'activation': None},
-            batch_size=BATCH_SIZE,
-            image_height=IMAGE_HEIGHT,
-            image_width=IMAGE_WIDTH,
-            ds_part=DS_PART,
-            epoches=EPOCHES,
-            features=[64, 128, 256, 512]
-        ),
-        HP(
-            model_type='Unet',
-            loss=DiceLoss,
-            loss_params={'activation': None},
-            batch_size=BATCH_SIZE,
-            image_height=IMAGE_HEIGHT,
-            image_width=IMAGE_WIDTH,
-            ds_part=DS_PART,
-            epoches=EPOCHES,
-            features=[32, 64, 128, 256]
-        ),
+        # HP(
+        #     model_type='Unet',
+        #     loss=DiceLoss,
+        #     loss_params={'activation': None},
+        #     batch_size=BATCH_SIZE,
+        #     image_height=IMAGE_HEIGHT,
+        #     image_width=IMAGE_WIDTH,
+        #     ds_part=DS_PART,
+        #     epoches=EPOCHES,
+        #     features=[16, 32]
+        # ),
+        # HP(
+        #     model_type='Unet',
+        #     loss=DiceLoss,
+        #     loss_params={'activation': None},
+        #     batch_size=BATCH_SIZE,
+        #     image_height=IMAGE_HEIGHT,
+        #     image_width=IMAGE_WIDTH,
+        #     ds_part=DS_PART,
+        #     epoches=EPOCHES,
+        #     features=[64, 128, 256, 512]
+        # ),
+        # HP(
+        #     model_type='Unet',
+        #     loss=DiceLoss,
+        #     loss_params={'activation': None},
+        #     batch_size=BATCH_SIZE,
+        #     image_height=IMAGE_HEIGHT,
+        #     image_width=IMAGE_WIDTH,
+        #     ds_part=DS_PART,
+        #     epoches=EPOCHES,
+        #     features=[32, 64, 128, 256]
+        # ),
         HP(
             model_type='Unet',
             loss=DiceLoss,
@@ -162,40 +173,40 @@ if __name__ == '__main__':
             epoches=EPOCHES,
             features=[16, 32, 64, 128]
         ),
-        HP(
-            model_type='Unet',
-            loss=FocalTverskyLoss,
-            loss_params={'alpha': 0.8, 'beta': 0.2, 'gamma': 2},
-            batch_size=BATCH_SIZE,
-            image_height=IMAGE_HEIGHT,
-            image_width=IMAGE_WIDTH,
-            ds_part=DS_PART,
-            epoches=EPOCHES,
-            features=[64, 128, 256, 512]
-        ),
-        HP(
-            model_type='Unet',
-            loss=FocalTverskyLoss,
-            loss_params={'alpha': 0.8, 'beta': 0.2, 'gamma': 2},
-            batch_size=BATCH_SIZE,
-            image_height=IMAGE_HEIGHT,
-            image_width=IMAGE_WIDTH,
-            ds_part=DS_PART,
-            epoches=EPOCHES,
-            features=[32, 64, 128, 256]
-        ),
-        HP(
-            model_type='Unet',
-            loss=FocalTverskyLoss,
-            loss_params={'alpha': 0.8, 'beta': 0.2, 'gamma': 2},
-            batch_size=BATCH_SIZE,
-            image_height=IMAGE_HEIGHT,
-            image_width=IMAGE_WIDTH,
-            ds_part=DS_PART,
-            epoches=EPOCHES,
-            features=[16, 32, 64, 128]
-        ),
+        # HP(
+        #     model_type='Unet',
+        #     loss=FocalTverskyLoss,
+        #     loss_params={'alpha': 0.8, 'beta': 0.2, 'gamma': 2},
+        #     batch_size=BATCH_SIZE,
+        #     image_height=IMAGE_HEIGHT,
+        #     image_width=IMAGE_WIDTH,
+        #     ds_part=DS_PART,
+        #     epoches=EPOCHES,
+        #     features=[64, 128, 256, 512]
+        # ),
+        # HP(
+        #     model_type='Unet',
+        #     loss=FocalTverskyLoss,
+        #     loss_params={'alpha': 0.8, 'beta': 0.2, 'gamma': 2},
+        #     batch_size=BATCH_SIZE,
+        #     image_height=IMAGE_HEIGHT,
+        #     image_width=IMAGE_WIDTH,
+        #     ds_part=DS_PART,
+        #     epoches=EPOCHES,
+        #     features=[32, 64, 128, 256]
+        # ),
+        # HP(
+        #     model_type='Unet',
+        #     loss=FocalTverskyLoss,
+        #     loss_params={'alpha': 0.8, 'beta': 0.2, 'gamma': 2},
+        #     batch_size=BATCH_SIZE,
+        #     image_height=IMAGE_HEIGHT,
+        #     image_width=IMAGE_WIDTH,
+        #     ds_part=DS_PART,
+        #     epoches=EPOCHES,
+        #     features=[16, 32, 64, 128]
+        # ),
     ]
 
-    for config in configs[:1]:
+    for config in configs:
         fit(config)
