@@ -190,6 +190,7 @@ class MixDatasetGenerator(BaseDatasetGenerator):
             x = random.randint(0, w - w_box)
             y = random.randint(0, h - h_box)
 
+            # наложение через попиксельный максимум
             overlapped_image[y:y+h_box, x:x+w_box] = cv2.max(box_masked, overlapped_image[y:y+h_box, x:x+w_box])
             handwritten_mask[y:y+h_box, x:x+w_box] = cv2.bitwise_or(box_mask, handwritten_mask[y:y+h_box, x:x+w_box])
 

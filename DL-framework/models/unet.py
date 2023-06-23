@@ -39,24 +39,16 @@ class Unet(pl.LightningModule):
             self.downs.append(DoubleConv(in_channels, feature))
             in_channels = feature
 
-        print(1)
-
         # bottleneck layer
         self.bottleneck = DoubleConv(features[-1], features[-1] * 2)
-
-        print(2)
 
         # up part
         for feature in reversed(features):
             self.ups.append(nn.ConvTranspose2d(feature * 2, feature, kernel_size=2, stride=2))
             self.ups.append(DoubleConv(feature * 2, feature))
 
-        print(3)
-        
         # final layer
         self.final_conv = nn.Conv2d(features[0], out_channels, kernel_size=1)
-
-        print(4)
 
         # LOSS
         self.loss_fn = loss
@@ -72,6 +64,7 @@ class Unet(pl.LightningModule):
     def forward(self, x):
         skip_connections = []
 
+        # down
         for down in self.downs:
             x = down(x)
             skip_connections.append(x)
@@ -80,6 +73,7 @@ class Unet(pl.LightningModule):
         x = self.bottleneck(x)
         skip_connections = skip_connections[::-1]
 
+        # up with skip connections
         for idx in range(0, len(self.ups), 2):
             # UP by ConvTranspose and Double conv on each iteration
             x = self.ups[idx](x)
